@@ -1,0 +1,592 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SunTaxi Navigation</title>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/flowbite@2.5.2/dist/flowbite.min.css" rel="stylesheet" />
+    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/ui@latest"></script>
+    <script src="translations.js"></script>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+    <style>
+        .nav-link {
+            position: relative;
+            transition: color 0.3s ease;
+            color: #000; /* Black */
+        }
+        .nav-link::after {
+            content: '';
+            position: absolute;
+            width: 0;
+            height: 2px;
+            display: block;
+            margin-top: 5px;
+            right: 0;
+            background: #e75129; /* Orange */
+            transition: width 0.3s ease;
+            -webkit-transition: width 0.3s ease;
+        }
+        .nav-link:hover::after {
+            width: 100%;
+            left: 0;
+            background: #e75129; /* Orange */
+        }
+        .nav-link.active {
+            color: #e75129; /* Orange */
+        }
+        .nav-logo {
+            transition: transform 0.3s ease;
+        }
+        .nav-logo:hover {
+            transform: scale(1.1);
+        }
+        .logo-text-yellow {
+            color: #fecc02; /* Yellow */
+        }
+        .logo-text-orange {
+            color: #e75129; /* Orange */
+        }
+        
+        /* Taxi animation styles */
+        .scroll-progress-container {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            height: 3px;
+            background: #f0f0f0;
+            transform: scaleX(0);
+            transform-origin: left;
+            transition: transform 0.2s ease;
+        }
+
+        .scroll-progress-line {
+            height: 100%;
+            background: linear-gradient(to right, #fecc02, #e75129);
+            position: relative;
+        }
+
+        .taxi {
+            position: absolute;
+            right: -20px;
+            top: -12px;
+            transform: translateY(-50%);
+            transition: opacity 0.3s ease;
+            opacity: 0;
+            font-size: 24px;
+            /* Entferne die feste Farbe hier */
+        }
+
+        .taxi.visible {
+            opacity: 1;
+        }
+
+        @keyframes bounce {
+            0%, 100% { 
+                transform: translateY(-50%); /* Entfernt die Rotation */
+                right: -20px;
+            }
+            50% { 
+                transform: translateY(-65%); /* Nur vertikale Bewegung */
+                right: -20px;
+            }
+        }
+
+        .taxi.animated {
+            animation: bounce 0.8s ease-in-out infinite; /* Sanftere Animation */
+        }
+
+        /* Remove all slider-related styles */
+        /* Instead add these new styles: */
+
+        .search-container {
+            width: 100%;
+            max-width: 800px;
+            margin: 2rem auto;
+            padding: 2rem;
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+
+        .search-field {
+            position: relative;
+            margin-bottom: 1rem;
+        }
+
+        .search-field i {
+            position: absolute;
+            left: 1rem;
+            top: 50%;
+            transform: translateY(-50%);
+            color: #666;
+        }
+
+        .search-input {
+            width: 100%;
+            padding: 1rem 1rem 1rem 3rem;
+            border: 2px solid #e0e0e0;
+            border-radius: 10px;
+            font-size: 1.1rem;
+            transition: all 0.3s ease;
+        }
+
+        .search-input:focus {
+            border-color: #e75129;
+            outline: none;
+            box-shadow: 0 0 0 3px rgba(231, 81, 41, 0.2);
+        }
+
+        .search-input::placeholder {
+            color: #999;
+        }
+
+        .animation-container {
+            position: relative; /* Changed from absolute */
+            width: calc(100% - 4rem);
+            height: 40px; /* Added fixed height */
+            margin: 0 auto; /* Center the container */
+            margin-bottom: 1rem; /* Space before next input */
+        }
+
+        .animation-path {
+            position: absolute;
+            top: 50%;
+            width: 100%;
+            height: 3px; /* Slightly thicker */
+            background: linear-gradient(to right, #fecc02, #e75129);
+            opacity: 0;
+            transition: opacity 0.3s ease;
+            border-radius: 2px;
+        }
+
+        .animated-car {
+            position: absolute;
+            top: 50%;
+            left: 0;
+            transform: translateY(-50%);
+            color: #fecc02;
+            font-size: 24px;
+            opacity: 0;
+            transition: left 0.5s ease-in-out, transform 0.3s ease, opacity 0.3s ease;
+        }
+
+        .animated-car.moving {
+            animation: carMoving 0.5s infinite alternate;
+        }
+
+        .animated-car.arrived {
+            animation: carArrived 0.8s infinite;
+        }
+
+        @keyframes carMoving {
+            0% { transform: translateY(-50%) rotate(0deg); }
+            100% { transform: translateY(-50%) rotate(5deg); }
+        }
+
+        @keyframes carArrived {
+            0%, 100% { transform: translateY(-50%) scale(1); }
+            50% { transform: translateY(-50%) scale(1.2); }
+        }
+
+        .destination-marker {
+            position: absolute;
+            top: 50%;
+            right: -10px;
+            transform: translateY(-50%);
+            color: #e75129;
+            font-size: 24px;
+            opacity: 0;
+            transition: opacity 0.3s ease, transform 0.3s ease;
+        }
+
+        .destination-marker.active {
+            animation: markerPulse 1s infinite;
+        }
+
+        @keyframes markerPulse {
+            0%, 100% { transform: translateY(-50%) scale(1); }
+            50% { transform: translateY(-50%) scale(1.2); }
+        }
+
+        /* Footer Responsive Styles */
+        @media (max-width: 768px) {
+            footer .grid {
+                gap: 2rem;
+            }
+            
+            footer .flex.items-center {
+                justify-content: center;
+                text-align: center;
+            }
+            
+            footer p, footer h3 {
+                text-align: center;
+            }
+            
+            footer .space-x-4 {
+                justify-content: center;
+            }
+            
+            footer .flex.items-center.text-gray-400 {
+                justify-content: center;
+            }
+            
+            footer ul.space-y-2 {
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+            }
+        }
+        
+        @media (max-width: 480px) {
+            footer {
+                padding: 2rem 1rem;
+            }
+            
+            footer .grid {
+                gap: 3rem;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <nav class="bg-white border-gray-200 dark:bg-gray-900 shadow-lg sticky top-0 z-50">
+        <div class="max-w-screen-xl flex flex-wrap items-center justify-between mx-auto p-4">
+            <a href="/" class="flex items-center space-x-3 rtl:space-x-reverse nav-logo">
+                <img src="/images/logo.png" class="h-12" alt="Company Logo" />
+                <span class="self-center text-3xl font-semibold whitespace-nowrap dark:text-white">
+                    <span class="logo-text-yellow">Sun</span><span class="logo-text-orange">Taxi</span>
+                </span>
+            </a>
+            <div class="flex items-center md:order-2 space-x-1 md:space-x-0 rtl:space-x-reverse">
+                <button data-collapse-toggle="navbar-language" type="button"
+                    class="inline-flex items-center p-2 text-sm text-gray-500 rounded-lg md:hidden hover:bg-gray-200 focus:outline-none"
+                    aria-controls="navbar-language" aria-expanded="false">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor"
+                        viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                        <path stroke-linecap="round" stroke-linejoin="round"
+                            stroke-width="2"
+                            d="M4 6h16M4 12h16M4 18h16"></path>
+                    </svg>
+                </button>
+                <button type="button" data-dropdown-toggle="language-dropdown-menu"
+                    class="inline-flex items-center font-medium justify-center px-4 py-2 text-sm text-gray-900 dark:text-white rounded-lg cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700 dark:hover:text-white">
+                    <svg class="w-5 h-5 rounded-full me-3" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 3900 3900">
+                        <path fill="#b22234" d="M0 0h7410v3900H0z" />
+                        <path d="M0 450h7410m0 600H0m0 600h7410m0 600H0m0 600h7410m0 600H0" stroke="#fff"
+                            stroke-width="300" />
+                        <path fill="#3c3b6e" d="M0 0h2964v2100H0z" />
+                        <g fill="#fff">
+                            <path d="M247 90l70.534 217.082-184.66-134.164h228.253L176.466 307.082z" />
+                        </g>
+                    </svg>
+                    English (US)
+                </button>
+                <div class="z-50 hidden my-4 text-base list-none bg-white divide-y divide-gray-100 rounded-lg shadow dark:bg-gray-700"
+                    id="language-dropdown-menu">
+                    <ul class="py-2 font-medium" role="none">
+                        <li>
+                            <a href="#" onclick="translate('en')"
+                                class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-600 dark:hover:text-white"
+                                role="menuitem">
+                                <div class="inline-flex items-center">
+                                    English (US)
+                                </div>
+                            </a>
+                        </li>
+                        <li>
+                            <a href="#" onclick="translate('de')"
+                                class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-600 dark:hover:text-white"
+                                role="menuitem">
+                                <div class="inline-flex items-center">
+                                    Deutsch
+                                </div>
+                            </a>
+                        </li>
+                        <li>
+                            <a href="#" onclick="translate('sl')"
+                                class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-600 dark:hover:text-white"
+                                role="menuitem">
+                                <div class="inline-flex items-center">
+                                    Slovenščina
+                                </div>
+                            </a>
+                        </li>
+                        <li>
+                            <a href="#" onclick="translate('it')"
+                                class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-600 dark:hover:text-white"
+                                role="menuitem">
+                                <div class="inline-flex items-center">
+                                    Italiano
+                                </div>
+                            </a>
+                        </li>
+                        <li>
+                            <a href="#" onclick="translate('es')"
+                                class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-600 dark:hover:text-white"
+                                role="menuitem">
+                                <div class="inline-flex items-center">
+                                    Español
+                                </div>
+                            </a>
+                        </li>
+                        <li>
+                            <a href="#" onclick="translate('fr')"
+                                class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-600 dark:hover:text-white"
+                                role="menuitem">
+                                <div class="inline-flex items-center">
+                                    Français
+                                </div>
+                            </a>
+                        </li>
+                        <li>
+                            <a href="#" onclick="translate('zh')"
+                                class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-600 dark:hover:text-white"
+                                role="menuitem">
+                                <div class="inline-flex items-center">
+                                    中文 (简体)
+                                </div>
+                            </a>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+            <div class="items-center justify-between hidden w-full md:flex md:w-auto md:order-1" id="navbar-language">
+                <ul
+                    class="flex flex-col font-medium p-4 md:p-0 mt-4 border border-gray-100 rounded-lg bg-white md:space-x-8 rtl:space-x-reverse md:flex-row md:mt-0 md:border-0 md:bg-white dark:bg-gray-800 md:dark:bg-gray-900 dark:border-gray-700">
+                    <li>
+                        <a href="#"
+                            class="block py-2 px-3 text-orange-500 rounded md:bg-transparent md:text-[#e75129] md:p-0 md:dark:text-[#e75129] nav-link active"
+                            aria-current="page" data-translate="home">Home</a>
+                    </li>
+                    <li>
+                        <a href="#"
+                            class="block py-2 px-3 md:p-0 text-gray-900 rounded hover:bg-gray-100 md:hover:bg-transparent md:hover:text-[#e75129] dark:text-white md:dark:hover:text-[#e75129] dark:hover:bg-gray-700 dark:hover:text-white md:dark:hover:bg-transparent dark:border-gray-700 nav-link" data-translate="about">About</a>
+                    </li>
+                    <li>
+                        <a href="#"
+                            class="block py-2 px-3 md:p-0 text-gray-900 rounded hover:bg-gray-100 md:hover:bg-transparent md:hover:text-[#e75129] dark:text-white md:dark:hover:text-[#e75129] dark:hover:bg-gray-700 dark:hover:text-white md:dark:hover:bg-transparent dark:border-gray-700 nav-link" data-translate="services">Services</a>
+                    </li>
+                    <li>
+                        <a href="#"
+                            class="block py-2 px-3 md:p-0 text-gray-900 rounded hover:bg-gray-100 md:hover:bg-transparent md:hover:text-[#e75129] dark:text-white md:dark:hover:text-[#e75129] dark:hover:bg-gray-700 dark:hover:text-white md:dark:hover:bg-transparent dark:border-gray-700 nav-link" data-translate="pricing">Pricing</a>
+                    </li>
+                    <li>
+                        <a href="#"
+                            class="block py-2 px-3 md:p-0 text-gray-900 rounded hover:bg-gray-100 md:hover:bg-transparent md:hover:text-[#e75129] dark:text-white md:dark:hover:text-[#e75129] dark:hover:bg-gray-700 dark:hover:text-white md:dark:hover:bg-transparent dark:border-gray-700 nav-link" data-translate="contact">Contact</a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+        <div class="scroll-progress-container">
+            <div class="scroll-progress-line">
+                <div class="taxi">
+                    <i class="bi bi-taxi-front-fill"></i>
+                </div>
+            </div>
+        </div>
+    </nav>
+    <script src="https://cdn.jsdelivr.net/npm/flowbite@2.5.2/dist/flowbite.min.js"></script>
+    <script>
+        window.addEventListener('scroll', () => {
+            const scrollProgress = document.querySelector('.scroll-progress-container');
+            const taxi = document.querySelector('.taxi');
+            
+            const scrollPercent = (window.scrollY) / (document.documentElement.scrollHeight - window.innerHeight);
+            scrollProgress.style.transform = `scaleX(${scrollPercent})`;
+            
+            // Farbe zwischen Gelb und Orange interpolieren
+            const yellow = {r: 254, g: 204, b: 2};  // #fecc02
+            const orange = {r: 231, g: 81, b: 41};  // #e75129
+            
+            const r = Math.round(yellow.r + (orange.r - yellow.r) * scrollPercent);
+            const g = Math.round(yellow.g + (orange.g - yellow.g) * scrollPercent);
+            const b = Math.round(yellow.b + (orange.b - yellow.b) * scrollPercent);
+            
+            taxi.style.color = `rgb(${r}, ${g}, ${b})`;
+            
+            if (scrollPercent > 0) {
+                taxi.classList.add('visible', 'animated');
+            } else {
+                taxi.classList.remove('visible', 'animated');
+            }
+        });
+    </script>
+
+<div class="flex flex-col items-center justify-center bg-white pt-8">
+    <h1 class="text-7xl font-bold text-center mb-4">
+        <span class="logo-text-yellow">Sun</span><span class="logo-text-orange">Taxi</span>
+    </h1>
+    <p class="text-xl text-center mb-12" style="color: #666;">Your trusted partner for premium and reliable transportation services</p>
+</div>
+
+<div class="search-container">
+    <div class="text-center mb-6">
+        <h2 class="text-2xl font-bold mb-2" style="background: linear-gradient(to right, #fecc02, #e75129); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">
+            Book Your Ride Now
+        </h2>
+        <p class="text-gray-600">Enter your pickup and destination addresses and we'll get you there safely.</p>
+    </div>
+    <div class="search-field relative">
+        <i class="bi bi-geo-alt-fill text-xl"></i>
+        <input type="text" 
+               class="search-input pickup-input" 
+               placeholder="Enter pickup location..." 
+               aria-label="Pickup location">
+    </div>
+
+    <div class="animation-container">
+        <div class="animation-path"></div>
+        <div class="animated-car">
+            <i class="bi bi-taxi-front-fill"></i>
+        </div>
+        <div class="destination-marker">
+            <i class="bi bi-flag-fill"></i>
+        </div>
+    </div>
+
+    <div class="search-field relative">
+        <i class="bi bi-cursor-fill text-xl"></i>
+        <input type="text" 
+               class="search-input destination-input" 
+               placeholder="Where would you like to go?" 
+               aria-label="Destination">
+    </div>
+    <button style="background: linear-gradient(to right, #fecc02, #e75129);" 
+            class="w-full mt-4 py-3 px-6 text-white text-lg font-semibold rounded-lg hover:shadow-lg transition-all duration-300 transform hover:-translate-y-1">
+        Book Taxi Now
+    </button>
+</div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', () => {
+        const pickupInput = document.querySelector('.pickup-input');
+        const destinationInput = document.querySelector('.destination-input');
+        const animationPath = document.querySelector('.animation-path');
+        const animatedCar = document.querySelector('.animated-car');
+        const destinationMarker = document.querySelector('.destination-marker');
+
+        function updateAnimation() {
+            const pickupValue = pickupInput.value.length;
+            const destinationValue = destinationInput.value.length;
+            
+            if (pickupValue > 0) {
+                animationPath.style.opacity = '1';
+                animatedCar.style.opacity = '1';
+                destinationMarker.style.opacity = '1';
+                
+                // Progress now depends mainly on destination input
+                const progress = destinationValue > 0 ? 
+                    Math.min(destinationValue / 15, 1) : 0.1;
+                
+                // Update car position
+                animatedCar.style.left = `${progress * 100}%`;
+                
+                // Color interpolation
+                const yellow = {r: 254, g: 204, b: 2};
+                const orange = {r: 231, g: 81, b: 41};
+                const r = Math.round(yellow.r + (orange.r - yellow.r) * progress);
+                const g = Math.round(yellow.g + (orange.g - yellow.g) * progress);
+                const b = Math.round(yellow.b + (orange.b - yellow.b) * progress);
+                
+                animatedCar.style.color = `rgb(${r}, ${g}, ${b})`;
+                
+                // Animation states
+                if (progress >= 1) {
+                    animatedCar.classList.remove('moving');
+                    animatedCar.classList.add('arrived');
+                    destinationMarker.classList.add('active');
+                } else if (progress > 0.1) {
+                    animatedCar.classList.add('moving');
+                    animatedCar.classList.remove('arrived');
+                    destinationMarker.classList.remove('active');
+                } else {
+                    animatedCar.classList.remove('moving', 'arrived');
+                    destinationMarker.classList.remove('active');
+                }
+            } else {
+                animationPath.style.opacity = '0';
+                animatedCar.style.opacity = '0';
+                destinationMarker.style.opacity = '0';
+                animatedCar.classList.remove('moving', 'arrived');
+                destinationMarker.classList.remove('active');
+            }
+        }
+
+        pickupInput.addEventListener('input', updateAnimation);
+        destinationInput.addEventListener('input', updateAnimation);
+    });
+</script>
+    
+    <footer class="bg-gray-900 text-white pt-12 pb-8">
+        <div class="max-w-screen-xl mx-auto px-4">
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-12">
+                <!-- Company Info -->
+                <div>
+                    <div class="flex items-center mb-4">
+                        <img src="/images/logo.png" class="h-10 mr-3" alt="SunTaxi Logo">
+                        <span class="text-2xl font-semibold">
+                            <span class="logo-text-yellow">Sun</span><span class="logo-text-orange">Taxi</span>
+                        </span>
+                    </div>
+                    <p class="text-gray-400 mb-4">Your trusted partner for premium and reliable transportation services. Available 24/7 for your convenience.</p>
+                    <div class="flex space-x-4">
+                        <a href="#" class="text-gray-400 hover:text-[#fecc02] transition-colors">
+                            <i class="bi bi-facebook text-xl"></i>
+                        </a>
+                        <a href="#" class="text-gray-400 hover:text-[#fecc02] transition-colors">
+                            <i class="bi bi-instagram text-xl"></i>
+                        </a>
+                        <a href="#" class="text-gray-400 hover:text-[#fecc02] transition-colors">
+                            <i class="bi bi-twitter text-xl"></i>
+                        </a>
+                    </div>
+                </div>
+
+                <!-- Quick Links -->
+                <div>
+                    <h3 class="text-lg font-semibold mb-4 text-[#fecc02]">Quick Links</h3>
+                    <ul class="space-y-2">
+                        <li><a href="#" class="text-gray-400 hover:text-[#e75129] transition-colors">About Us</a></li>
+                        <li><a href="#" class="text-gray-400 hover:text-[#e75129] transition-colors">Our Services</a></li>
+                        <li><a href="#" class="text-gray-400 hover:text-[#e75129] transition-colors">Pricing</a></li>
+                        <li><a href="#" class="text-gray-400 hover:text-[#e75129] transition-colors">Book a Taxi</a></li>
+                        <li><a href="#" class="text-gray-400 hover:text-[#e75129] transition-colors">Contact Us</a></li>
+                    </ul>
+                </div>
+
+                <!-- Contact Info -->
+                <div>
+                    <h3 class="text-lg font-semibold mb-4 text-[#fecc02]">Contact Us</h3>
+                    <ul class="space-y-2">
+                        <li class="flex items-center text-gray-400">
+                            <i class="bi bi-geo-alt-fill mr-2 text-[#e75129]"></i>
+                            123 Taxi Street, 1000 Ljubljana, Slovenia
+                        </li>
+                        <li class="flex items-center text-gray-400">
+                            <i class="bi bi-telephone-fill mr-2 text-[#e75129]"></i>
+                            +386 1 234 5678
+                        </li>
+                        <li class="flex items-center text-gray-400">
+                            <i class="bi bi-envelope-fill mr-2 text-[#e75129]"></i>
+                            info@suntaxi.com
+                        </li>
+                    </ul>
+                </div>
+            </div>
+        
+
+            <!-- Copyright -->
+            <div class="border-t border-gray-800 mt-8 pt-8 text-center text-gray-400">
+                <p>&copy; 2024 SunTaxi. All rights reserved.</p>
+            </div>
+        </div>
+    </footer>
+
+</body>
+
+</html>
